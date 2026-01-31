@@ -24,7 +24,7 @@
 ---
 
 ## 2. The Architecture
-**Owner:** Project Lead
+**Owner:** Katya Mijatovic
 
 ### Choice of Quantum Algorithm
 **Algorithm family:** *Quantum seeding engines* that generate candidate bitstrings for LABS, feeding a fixed classical Memetic Tabu Search (MTS) backend.
@@ -92,7 +92,7 @@ The tutorial MTS spends most time in repeated energy evaluation and local search
 ---
 
 ## 4. The Verification Plan
-**Owner:** Quality Assurance PIC
+**Owner:** Katya Mijatovic
 
 ### Unit Testing Strategy
 **Framework:** `pytest` (plus optional property-based checks)  
@@ -130,21 +130,11 @@ These are the fastest “physics-style” correctness signals and are explicitly
 ---
 
 ## 5. Execution Strategy & Success Metrics
-**Owner:** Technical Marketing PIC
+**Owner:** Ben Anstrom
 
 ### Agentic Workflow
 **Plan (human + AI collaboration):**
-- We use GitHub issues/checklists to break work into PIC-owned tasks (Architecture / Acceleration / QA / Story).
-- AI usage is constrained by:
-  - keeping “source of truth” in-repo (`docs/decisions.md`, `docs/interfaces.md`),
-  - requiring tests before merges,
-  - logging any AI hallucinations and the fix (feeds directly into `AI_REPORT.md` later).
 
-**Daily loop:**
-1. Implement small change
-2. Run tests + invariants
-3. Run a tiny benchmark (N=20) for regression
-4. Only then scale N or move to GPU benchmarking
 
 ### Success Metrics
 We will report results as **head-to-head comparisons under identical MTS budgets**.
@@ -174,7 +164,7 @@ We will report results as **head-to-head comparisons under identical MTS budgets
 ---
 
 ## 6. Resource Management Plan
-**Owner:** GPU Acceleration PIC
+**Owner:** Ben Anstrom
 
 **Plan:**
 - Develop and validate entirely on qBraid CPU until:
@@ -185,25 +175,3 @@ We will report results as **head-to-head comparisons under identical MTS budgets
   - porting the inner-loop kernels (energy + neighbor scoring),
   - collecting a small number of benchmark runs (pre-defined matrix of N and seeders),
   - final plots.
-
-**Operational controls:**
-- Maintain a “benchmark budget” checklist (runs × N × seeder × repetitions) to prevent runaway spending.
-- The GPU PIC is responsible for shutting down Brev instances during breaks and after benchmarks.
-- Cache intermediate results (seeds, best energies, timing logs) to disk so we don’t rerun expensive experiments unnecessarily.
-
----
-
-## Appendix: Near-Term Task Breakdown (Phase 1 → Phase 2)
-*(Not required by the template, but included for clarity.)*
-
-1. **Phase 1 (Now):**
-   - Finish tutorial self-validation checks (symmetries + small-N brute force)
-   - Finalize this PRD and notify judges
-
-2. **Phase 2 (After GPU access):**
-   - Implement seeder interface + random seeding baseline
-   - Implement QAOA + DCQO seeders in CUDA‑Q (GPU simulation)
-   - Implement PCE seeder (main twist)
-   - Port MTS energy evaluation to GPU (CuPy / CUDA kernel)
-   - Run controlled benchmarks + generate plots + write AI_REPORT
-
