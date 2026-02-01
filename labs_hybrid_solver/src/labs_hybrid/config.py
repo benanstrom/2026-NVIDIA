@@ -135,7 +135,7 @@ def default_benchmark_plan() -> BenchmarkPlan:
         ),
         GateConfig(
             name="gate3_gpu_matrix",
-            N_list=[20, 30, 40],
+            N_list=[25, 50],
             seeders=seeders_all,
             budget_s=3.0,
             max_iters=None,
