@@ -38,10 +38,19 @@
   | 4096 | 64 | 9.51 | 0.20 | 47.9x |
 - **Impact:** 13–48x MTS speedup. Delta path cost (~2 ms/iter) is constant across K; naive scales linearly with K. Complexity reduced from O(K×N³) to O(K×N²) per iteration.
 
-### 3. PCE Seeder Completion (`seeders/pce_seeder.py`)
+### 3. PCE Seeder Completion (`seeders/pce_seeder.py`) — DONE
 - **Issue:** Skeleton with placeholder ring entanglement and explicit TODOs on lines 46, 80, 135–137.
-- **Action:** Implement paper-accurate Pauli correlation encoding circuit from Sciorilli et al. (2025). Replace placeholder ring entanglement + local RZ phases.
-- **Impact:** Required for stretch goal; currently would skew benchmark results if included in Gate 3 matrix.
+- **Action:** Replaced 142-line placeholder with ~350-line paper-accurate implementation of Pauli Correlation Encoding (Sciorilli et al. 2025, arXiv:2506.17391). Key components:
+  - **Pauli utilities:** Symplectic representation of n-qubit Pauli operators; enumeration of all 4^n-1 non-identity operators; commutation check via symplectic inner product.
+  - **Operator selection:** Greedy commuting set and non-commuting set (anti-commuting core of up to 2n+1, then max anti-commutation extension).
+  - **State-vector simulation:** In-place RY, RZ, RZZ gates on 2^n complex arrays; brickwork ansatz with even/odd layer entangling pairs (per-layer: n RY + n RZ + brickwork RZZ).
+  - **Relaxed cost (Eq. 4):** x̃_i = tanh(α⟨Π_i⟩), ℒ = Σ autocorrelation sidelobes² − β·Σx̃_i². Vectorized expectations via `np.einsum`.
+  - **Optimization:** scipy L-BFGS-B with multi-restart; deduplication of decoded sequences; fallback padding with random seeds.
+  - **No CUDA-Q dependency:** n is tiny (n=2 for N≤15, n=4 for N≤255), so numpy state-vector simulation is faster than any quantum backend overhead.
+- **Config update:** Default layers changed from 2 → 15 in `config.py` (paper default: 150 params for n=4).
+- **Dependency:** Added `scipy` to `requirements.txt`.
+- **Tests:** Both existing PCE tests pass unchanged (shape/dtype/values, determinism). Full suite: 18 passed, 12 skipped (GPU).
+- **Impact:** PCE seeder is now paper-accurate and ready for Gate 2/3 benchmarking.
 
 ---
 
@@ -89,7 +98,7 @@
 |---|------|----------|--------|
 | 1 | GPU energy kernel optimization | High | Done (150–250x speedup) |
 | 2 | GPU MTS delta-energy optimization | High | Done (13–48x speedup) |
-| 3 | PCE seeder completion | High | Pending |
+| 3 | PCE seeder completion | High | Done (paper-accurate, numpy+scipy) |
 | 4 | GPU MTS convergence parity test | Medium | Pending |
 | 5 | CUDA-Q seeding verification | Medium | Pending |
 | 6 | Gate 3 OOM guard | Medium | Pending |

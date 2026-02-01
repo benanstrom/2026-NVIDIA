@@ -110,7 +110,7 @@ def default_benchmark_plan() -> BenchmarkPlan:
                 },
             },
         ),
-        S("pce", params={"layers": 2}),
+        S("pce", params={"layers": 15}),
     ]
 
     # Gate 1: CPU integration (small N) — Random/QAOA/DCQO/DCQO+
