@@ -388,7 +388,7 @@ def _run_pce(
     n_qubits = params.get("n_qubits", None)
     op_set = str(params.get("operator_set", "non_commuting"))
     beta = float(params.get("beta", 15.0))
-    max_restarts = int(params.get("max_restarts", max(K_out, 10)))
+    max_restarts = int(params.get("max_restarts", min(30, max(K_out, 10))))
     optimizer = str(params.get("optimizer", "L-BFGS-B"))
     maxiter = int(params.get("maxiter", 500))
 
