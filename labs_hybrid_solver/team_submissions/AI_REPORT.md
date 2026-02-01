@@ -25,15 +25,15 @@
 
 ## 2) Verification strategy
 
-**Test suite:** 8 test files, 29 test functions (702 lines).
+**Test suite:** 8 test files, 30 test functions (702 lines).
 
 | Layer | What it proves | Tests |
 |-------|---------------|-------|
 | **Brute-force oracle** | Energy function is correct for N ≤ 8 | `test_energy_smallN_bruteforce.py` (3 tests) |
 | **CPU/GPU energy parity** | CuPy RawKernel matches NumPy exactly (integer energy) | `test_energy_cpu_gpu_parity.py` (3 tests) |
 | **Delta-energy kernel parity** | All 3 CUDA kernels match naive full-eval | `test_delta_energy_parity.py` (3 tests) |
-| **Seeder validity** | Shape (K_out, N), dtype int8, values ±1, determinism | `test_seeders_validity.py` (4 tests) |
-| **MTS sanity** | CPU improves seeds, GPU delta matches naive, CPU/GPU convergence parity, stagnation early-exit | `test_mts_sanity.py` (4 tests) |
+| **Seeder validity** | Shape (K_out, N), dtype int8, values ±1, determinism | `test_seeders_validity.py` (3 tests) |
+| **MTS sanity** | CPU improves seeds, GPU delta matches naive, CPU/GPU convergence parity, stagnation early-exit | `test_mts_sanity.py` (5 tests) |
 | **DCQO+ trotter knobs** | Zero-depth invariants hold across all knob combinations | `test_dcqo_plus_trotter_knobs.py` (4 tests) |
 | **Post-selection** | Correct tail extraction, quality improvement, sequence preservation, edge cases, diversity metrics | `test_selectors.py` (9 tests) |
 
@@ -81,4 +81,4 @@ Each run appends one row to `metrics.csv` and `metrics.jsonl`:
 - **All 9 revision items completed**: GPU energy kernel, GPU MTS delta-energy, PCE completion, convergence parity test, CUDA-Q seeding verification, OOM guard, post-selection tests, fallback documentation, MTS stagnation detection.
 - **GPU acceleration benchmarks** (L4 GPU): energy kernel 150–250× speedup (31–40 µs constant), MTS delta-energy 13–48× speedup (O(K·N²) vs O(K·N³)).
 - **Gate 2 results** (N=16): PCE achieves raw energy minimum of 24 (vs 32–36 for QAOA/DCQO), demonstrating superior initial seed quality. All seeders converge to final energy 24 after MTS.
-- **29 tests** across 8 files ensure correctness at every layer: brute-force oracle, CPU/GPU parity, kernel-level parity, seeder validity, MTS sanity, trotter knob invariants, and post-selection correctness.
+- **30 tests** across 8 files ensure correctness at every layer: brute-force oracle, CPU/GPU parity, kernel-level parity, seeder validity, MTS sanity, trotter knob invariants, and post-selection correctness.

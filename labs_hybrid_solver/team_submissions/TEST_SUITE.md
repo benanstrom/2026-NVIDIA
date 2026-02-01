@@ -1,6 +1,6 @@
 # TEST_SUITE.md — NVIDIA LABS Hybrid Solver (iQuHACK 2026)
 
-This test suite establishes **Gate 0 (CPU-only correctness)** and supports **Gate 2 (CPU/GPU parity)**. 8 test files, 29 test functions, 702 lines.
+This test suite establishes **Gate 0 (CPU-only correctness)** and supports **Gate 2 (CPU/GPU parity)**. 8 test files, 30 test functions, 702 lines.
 
 ## How to run
 
@@ -32,13 +32,13 @@ Validates each of the three incremental CUDA kernels against CPU reference:
 
 Skips if CUDA is unavailable.
 
-### `test_seeders_validity.py` (4 tests)
+### `test_seeders_validity.py` (3 tests)
 - Validates each seeder returns shape `(K_out, N)`, dtype `int8`, values in `{−1, +1}`.
 - **Determinism**: if CUDA-Q is not available or explicitly seeded, outputs repeat bit-for-bit for identical inputs.
 - **CUDA-Q seeding assertion**: when CUDA-Q is available, verifies that the seeder produces valid output (assertion, not skip).
 - **Different seeds differ**: two runs with different RNG seeds produce different output sequences.
 
-### `test_mts_sanity.py` (4 tests)
+### `test_mts_sanity.py` (5 tests)
 - **`test_mts_improves_or_matches_best_seed_cpu`**: CPU MTS returns a solution with final energy ≤ best seed energy.
 - **`test_mts_gpu_delta_improves_or_matches_best_seed`**: GPU delta-energy path also improves on seeds.
 - **`test_mts_gpu_delta_vs_naive_parity`**: GPU delta path and naive GPU path produce identical final energies (bit-for-bit).
