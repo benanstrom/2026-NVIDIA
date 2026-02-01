@@ -95,7 +95,12 @@ Seeders use CUDA-Q if available. If CUDA-Q is not importable in the environment,
 - **QAOA**: lightweight baseline using a 2-local proxy cost for tractability.
 - **DCQO**: digitized time-dependent evolution (Lie–Trotter, right-endpoint, fixed ordering).
 - **DCQO+**: *zero-depth* upgrades (midpoint grid, ordering alternation, k-permutation ordering) — no extra gates, only discretization/ordering changes.
-- **PCE**: runnable skeleton capturing encode→measure pipeline with explicit TODO markers for paper-accurate constants/operators.
+- **PCE**: paper-accurate implementation of Sciorilli et al. 2025 (arXiv:2506.17391). Uses numpy + scipy classical simulation (no CUDA-Q dependency): brickwork ansatz, relaxed LABS cost (Eq. 4), L-BFGS-B multi-restart optimization. Qubit count: n = ceil(log₄(N+1)), ~30 restarts.
+
+### GPU acceleration
+- **Energy kernel**: CuPy RawKernel with shared-memory tree reduction — 150–250× speedup over Python loop (31–40 µs constant time regardless of K/N).
+- **MTS delta-energy**: three incremental CUDA kernels (autocorr, delta-energy, update) — 13–48× speedup, complexity reduced from O(K·N³) to O(K·N²).
+- **OOM guard**: pre-check + exception handler for large-N CUDA-Q seeders to prevent GPU out-of-memory crashes.
 
 ## Fixed vs variable framing (attribution / fairness)
 - **Fixed across experiments:** LABS objective, post-selection by energy, MTS (CPU & GPU structure), runtime/iteration budgets, logging format.
