@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.env
+
+# Results are runtime artifacts
+results/**
+!results/README.md
+
+# Handoff bundles
+*.zip
+
+# IDE
+.vscode/
+.idea/

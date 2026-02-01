@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "labs-hybrid"
+version = "0.1.0"
+description = "NVIDIA LABS hybrid solver: quantum seeding + fixed (GPU-accelerated) MTS backbone"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "MIT iQuHACK 2026 Team"}]
+
+# NOTE: We intentionally do not hard-pin deps here because the hackathon image provides them.
+# The code imports: numpy, matplotlib, cupy-cuda12x, and (optionally) cuda-quantum.
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
