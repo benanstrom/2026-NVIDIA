@@ -52,7 +52,7 @@
    - Gate 0: 29 unit tests pass (7.2s)
    - Gate 1: CPU small-N (N=12,16) — all seeders converge, best energy 10/24
    - Gate 2: GPU bringup (N=16) — all 5 seeders converge to 24
-   - Gate 3: GPU matrix (N=20,30,40) — full seeder comparison, 3s MTS budget
+   - Gate 3: GPU matrix (N=20,30,40) — full seeder comparison, 3s MTS budget end slide
 
    **Gate 3 — Seed quality (best raw seed energy before MTS):**
 
@@ -62,7 +62,7 @@
    | 30 | 179 | 155 | 171 | 171 | **83** |
    | 40 | 316 | — | — | — | **184** |
 
-   → PCE produces seeds ~2× better than random across all N.
+   → PCE produces seeds ~2× better than random across all N. end slide
 
    **Gate 3 — Final energy after MTS (3s GPU budget):**
 
