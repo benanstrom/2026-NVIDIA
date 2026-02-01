@@ -95,12 +95,11 @@ def run_gate(gate: GateConfig, root_out_dir: str | Path, run_tag: str, rng_seed:
     skipped: list[str] = []
     for N in gate.N_list:
         for seeder_cfg in gate.seeders:
-            # Pre-check: skip if estimated VRAM would OOM.
-            skip_reason = _would_oom(seeder_cfg.name, int(N), gate.device)
-            if skip_reason is not None:
-                print(f"  [OOM guard] {skip_reason}")
-                skipped.append(skip_reason)
-                continue
+            # Warn if state vector is too large for GPU, but still run —
+            # the seeder will fall back to its classical sampler.
+            oom_warning = _would_oom(seeder_cfg.name, int(N), gate.device)
+            if oom_warning is not None:
+                print(f"  [OOM warning] {oom_warning} — will use classical fallback")
 
             cfg = RunConfig(
                 N=int(N),
