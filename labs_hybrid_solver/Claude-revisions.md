@@ -61,9 +61,11 @@
 - **Action:** Added `test_mts_cpu_gpu_convergence_parity` in `tests/test_mts_sanity.py`, parametrized over (K=8,N=16,iters=30) and (K=4,N=12,iters=40). Both paths are deterministic (no RNG in tabu loop); given identical seeds and fixed max_iters, the move sequence is identical. Asserts both best energy and best sequence match bit-for-bit.
 - **File:** `tests/test_mts_sanity.py`
 
-### 5. CUDA-Q Seeding Verification
+### 5. CUDA-Q Seeding Verification — DONE
 - **Issue:** `test_seeders_validity.py` skips determinism check when CUDA-Q seeding is unverified (lines 57–58).
-- **Action:** Confirm `cudaq.set_random_seed()` is respected. Add bit-for-bit reproducibility test for quantum seeders.
+- **Action:** Two changes in `tests/test_seeders_validity.py`:
+  1. Replaced `pytest.skip` with `assert cudaq_seeded` — when CUDA-Q is available, `set_random_seed()` must succeed or the test fails (no silent skip).
+  2. Added `test_cudaq_seeder_different_seeds_differ` parametrized over qaoa/dcqo/dcqo_plus — verifies that different `rng_seed` values produce different outputs, confirming the seed is actually respected and not silently ignored. Skips gracefully when CUDA-Q is not available.
 - **File:** `tests/test_seeders_validity.py`
 
 ### 6. Gate 3 OOM Guard
@@ -100,7 +102,7 @@
 | 2 | GPU MTS delta-energy optimization | High | Done (13–48x speedup) |
 | 3 | PCE seeder completion | High | Done (paper-accurate, numpy+scipy) |
 | 4 | GPU MTS convergence parity test | Medium | Done |
-| 5 | CUDA-Q seeding verification | Medium | Pending |
+| 5 | CUDA-Q seeding verification | Medium | Done |
 | 6 | Gate 3 OOM guard | Medium | Pending |
 | 7 | Post-selection integration test | Low | Pending |
 | 8 | Document fallback limitations | Low | Pending |
