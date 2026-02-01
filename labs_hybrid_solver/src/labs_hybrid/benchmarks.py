@@ -13,6 +13,56 @@ from .config import GateConfig, RunConfig
 from .logging_utils import ensure_dir, write_json, write_text
 from .pipeline import run_experiment
 
+# Seeders that use CUDA-Q N-qubit state-vector simulation.
+_CUDAQ_SEEDERS = frozenset({"qaoa", "dcqo", "dcqo_plus"})
+
+# Safety factor: require this much headroom beyond the estimated state vector.
+_VRAM_SAFETY_FACTOR = 2.5
+
+
+def _get_free_gpu_bytes() -> int | None:
+    """Query free GPU memory via CuPy. Returns None if unavailable."""
+    try:
+        import cupy as cp
+        free, _total = cp.cuda.Device().mem_info
+        return int(free)
+    except Exception:
+        return None
+
+
+def _estimate_seeder_vram_bytes(seeder_name: str, N: int) -> int:
+    """Estimate VRAM needed for a seeder's circuit simulation.
+
+    CUDA-Q seeders allocate an N-qubit state vector (2^N complex128).
+    PCE and random use negligible GPU memory.
+    """
+    if seeder_name in _CUDAQ_SEEDERS:
+        return (1 << N) * 16  # 2^N * sizeof(complex128)
+    return 0
+
+
+def _would_oom(seeder_name: str, N: int, device: str) -> str | None:
+    """Return a skip reason string if the run would likely OOM, else None."""
+    if device == "cpu":
+        return None
+    estimated = _estimate_seeder_vram_bytes(seeder_name, N)
+    if estimated == 0:
+        return None
+    free = _get_free_gpu_bytes()
+    if free is None:
+        # Can't query — let it try and rely on the safety-net try/except.
+        return None
+    needed = int(estimated * _VRAM_SAFETY_FACTOR)
+    if needed > free:
+        est_gb = estimated / (1 << 30)
+        free_gb = free / (1 << 30)
+        return (
+            f"Skipped: {seeder_name} N={N} needs ~{est_gb:.1f} GB state vector "
+            f"(×{_VRAM_SAFETY_FACTOR} safety = {needed / (1 << 30):.1f} GB), "
+            f"but only {free_gb:.1f} GB free"
+        )
+    return None
+
 
 def run_pytest(out_dir: str | Path) -> dict[str, Any]:
     """Run Gate 0: CPU-only correctness via pytest."""
@@ -42,8 +92,16 @@ def run_gate(gate: GateConfig, root_out_dir: str | Path, run_tag: str, rng_seed:
     (gate_dir / 'artifacts').mkdir(exist_ok=True)
 
     rows: list[dict] = []
+    skipped: list[str] = []
     for N in gate.N_list:
         for seeder_cfg in gate.seeders:
+            # Pre-check: skip if estimated VRAM would OOM.
+            skip_reason = _would_oom(seeder_cfg.name, int(N), gate.device)
+            if skip_reason is not None:
+                print(f"  [OOM guard] {skip_reason}")
+                skipped.append(skip_reason)
+                continue
+
             cfg = RunConfig(
                 N=int(N),
                 seeder=seeder_cfg,
@@ -56,13 +114,21 @@ def run_gate(gate: GateConfig, root_out_dir: str | Path, run_tag: str, rng_seed:
                 run_tag=run_tag,
                 save_traces=True,
             )
-            rows.append(run_experiment(cfg))
+            try:
+                rows.append(run_experiment(cfg))
+            except (MemoryError, RuntimeError) as exc:
+                msg = (
+                    f"  [OOM safety-net] {seeder_cfg.name} N={N} failed: {exc}"
+                )
+                print(msg)
+                skipped.append(msg)
 
     run_cfg = {
         'gate': asdict(gate),
         'run_tag': run_tag,
         'rng_seed': int(rng_seed),
         'env': {'platform': platform.platform(), 'python': platform.python_version()},
+        'skipped_oom': skipped if skipped else None,
     }
     write_json(gate_dir / 'run_config.json', run_cfg)
     write_text(gate_dir / 'results_summary.md', summarize_rows(rows, title=f'Results summary: {gate.name}'))

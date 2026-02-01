@@ -68,10 +68,13 @@
   2. Added `test_cudaq_seeder_different_seeds_differ` parametrized over qaoa/dcqo/dcqo_plus — verifies that different `rng_seed` values produce different outputs, confirming the seed is actually respected and not silently ignored. Skips gracefully when CUDA-Q is not available.
 - **File:** `tests/test_seeders_validity.py`
 
-### 6. Gate 3 OOM Guard
-- **Issue:** N=40 in Gate 3 benchmark could exceed VRAM on L4/T4 GPUs with no safeguard.
-- **Action:** Add memory estimation check before launching Gate 3 runs. Make N matrix adaptive or add early exit on OOM.
-- **File:** `scripts/run_bench_matrix.py`
+### 6. Gate 3 OOM Guard — DONE
+- **Issue:** N=40 in Gate 3 benchmark could exceed VRAM on L4/T4 GPUs with no safeguard. CUDA-Q seeders (qaoa, dcqo, dcqo_plus) allocate 2^N × 16 bytes for state-vector simulation — 16 GB at N=30, 16 TB at N=40.
+- **Action:** Two-layer guard added to `benchmarks.py`:
+  1. **Pre-check:** `_would_oom()` estimates VRAM for CUDA-Q seeders (2^N × 16 bytes × 2.5 safety factor), queries free GPU memory via CuPy, and skips the run with a log message if it would OOM. PCE and random seeders return 0 (no state vector) and always pass.
+  2. **Safety net:** `run_experiment()` call wrapped in try/except for `MemoryError` and `RuntimeError` to catch unexpected OOM without killing the whole gate.
+  Skipped runs are logged to console and recorded in `run_config.json` under `skipped_oom`.
+- **File:** `src/labs_hybrid/benchmarks.py`
 
 ---
 
@@ -103,7 +106,7 @@
 | 3 | PCE seeder completion | High | Done (paper-accurate, numpy+scipy) |
 | 4 | GPU MTS convergence parity test | Medium | Done |
 | 5 | CUDA-Q seeding verification | Medium | Done |
-| 6 | Gate 3 OOM guard | Medium | Pending |
+| 6 | Gate 3 OOM guard | Medium | Done |
 | 7 | Post-selection integration test | Low | Pending |
 | 8 | Document fallback limitations | Low | Pending |
 | 9 | MTS stagnation detection | Low | Pending |
