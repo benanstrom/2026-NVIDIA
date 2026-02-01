@@ -1,0 +1,2 @@
+gate,pytest_returncode,pytest_time_s,pytest_log,pytest_passed
+gate0_tests,0,10.897566202000235,results/run_pce_validation_20260201_042924/artifacts/pytest_gate0.txt,True

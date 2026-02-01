@@ -1,0 +1,10 @@
+.........................................                                                                                                 [100%]
+=============================================================== warnings summary ================================================================
+tests/test_seeders_validity.py: 64 warnings
+  /home/ubuntu/2026-NVIDIA/labs_hybrid_solver/src/labs_hybrid/seeders/pce_seeder.py:351: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+    result = minimize(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+41 passed, 64 warnings in 10.00s
+
+
