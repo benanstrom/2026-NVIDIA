@@ -151,7 +151,7 @@ def plot_final_energy(rows: list[dict], out_dir: Path):
 # Plot 3: Initial vs Final energy comparison (tutorial-style)
 # ---------------------------------------------------------------------------
 def plot_initial_vs_final(rows: list[dict], out_dir: Path):
-    by_seeder = _group_by_seeder([r for r in rows if int(r["N"]) == 20])
+    by_seeder = _group_by_seeder([r for r in rows if int(r["N"]) == 25])
     seeders = [s for s in SEEDER_ORDER if s in by_seeder]
 
     labels = []
@@ -187,12 +187,12 @@ def plot_initial_vs_final(rows: list[dict], out_dir: Path):
     ax.set_xticks(x_pos)
     ax.set_xticklabels([SEEDER_LABELS[s] for s in seeders], fontsize=12)
     ax.set_ylabel("Energy", fontsize=14)
-    ax.set_title("Initial vs Final Energy (N=20)", fontsize=15, fontweight="bold")
+    ax.set_title("Initial vs Final Energy (N=25)", fontsize=15, fontweight="bold")
     ax.legend(fontsize=12, loc="upper right")
     ax.tick_params(axis="y", labelsize=12)
     ax.grid(True, alpha=0.3, axis="y")
     fig.tight_layout()
-    fig.savefig(out_dir / "initial_vs_final_N20.png")
+    fig.savefig(out_dir / "initial_vs_final_N25.png")
     plt.close(fig)
 
 
@@ -237,7 +237,7 @@ def plot_cost_benefit(rows: list[dict], out_dir: Path):
 # Plot 5: Runtime breakdown (stacked bar, tutorial-style)
 # ---------------------------------------------------------------------------
 def plot_runtime_breakdown(rows: list[dict], out_dir: Path):
-    rows_n20 = [r for r in rows if int(r["N"]) == 20]
+    rows_n20 = [r for r in rows if int(r["N"]) == 25]
     by_seeder = _group_by_seeder(rows_n20)
     seeders = [s for s in SEEDER_ORDER if s in by_seeder]
 
@@ -283,38 +283,47 @@ def plot_runtime_breakdown(rows: list[dict], out_dir: Path):
                                   edgecolor="gray", alpha=0.8))
 
     fig.tight_layout()
-    fig.savefig(out_dir / "runtime_breakdown_N20.png")
+    fig.savefig(out_dir / "runtime_breakdown_N25.png")
     plt.close(fig)
 
 
 # ---------------------------------------------------------------------------
-# Plot 7: MTS iterations per second (grouped bar by N)
+# Plot 7: MTS iterations per second — CPU vs GPU (line graph)
 # ---------------------------------------------------------------------------
-def plot_mts_iters_per_sec(rows: list[dict], out_dir: Path):
-    by_n: dict[int, dict[str, float]] = {}
-    for r in rows:
-        n = int(r["N"])
-        s = str(r["seeder"])
-        iters = r.get("mts_summary", {}).get("iters", 0)
-        t = float(r.get("t_mts_total_s", 1.0))
-        if t > 0 and iters > 0:
-            by_n.setdefault(n, {})[s] = iters / t
+def plot_mts_iters_per_sec(cpu_rows: list[dict], gpu_rows: list[dict], out_dir: Path):
+    # Use "random" seeder for clean comparison (present at every N, no seeder overhead)
+    def _extract(rows: list[dict]) -> tuple[list[int], list[float]]:
+        by_n: dict[int, float] = {}
+        for r in rows:
+            if str(r["seeder"]) != "random":
+                continue
+            n = int(r["N"])
+            iters = r.get("mts_summary", {}).get("iters", 0)
+            t = float(r.get("t_mts_total_s", 1.0))
+            if t > 0 and iters > 0:
+                by_n[n] = iters / t
+        ns = sorted(by_n.keys())
+        return ns, [by_n[n] for n in ns]
 
-    ns = sorted(by_n.keys())
-    seeders = [s for s in SEEDER_ORDER if any(s in by_n[n] for n in ns)]
+    cpu_ns, cpu_vals = _extract(cpu_rows)
+    gpu_ns, gpu_vals = _extract(gpu_rows)
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    for s in seeders:
-        s_ns = [n for n in ns if s in by_n[n]]
-        s_vals = [by_n[n][s] for n in s_ns]
-        ax.plot(s_ns, s_vals, marker="o", markersize=8, linewidth=2.5,
-                color=COLORS[s], label=SEEDER_LABELS[s],
+
+    if cpu_ns:
+        ax.plot(cpu_ns, cpu_vals, marker="s", markersize=9, linewidth=2.5,
+                color="dimgray", label="CPU (NumPy)",
+                markeredgecolor="black", markeredgewidth=0.8)
+    if gpu_ns:
+        ax.plot(gpu_ns, gpu_vals, marker="o", markersize=9, linewidth=2.5,
+                color=NVIDIA_GREEN, label="GPU (CUDA kernels)",
                 markeredgecolor="black", markeredgewidth=0.8)
 
+    all_ns = sorted(set(cpu_ns + gpu_ns))
     ax.set_xlabel("Sequence Length N", fontsize=14)
     ax.set_ylabel("MTS Iterations / Second", fontsize=14)
-    ax.set_title("MTS Throughput (3s GPU Budget)", fontsize=15, fontweight="bold")
-    ax.set_xticks(ns)
+    ax.set_title("MTS Throughput: CPU vs GPU", fontsize=15, fontweight="bold")
+    ax.set_xticks(all_ns)
     ax.legend(fontsize=12, loc="upper right")
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
@@ -381,21 +390,38 @@ def main():
     _apply_theme()
 
     base = Path(__file__).resolve().parent.parent
-    results_dir = base / "results" / "run_bench_20260201_052047"
-    gate3_metrics = results_dir / "gate3_gpu_matrix" / "metrics.jsonl"
-    gate2_metrics = results_dir / "gate2_gpu_bringup" / "metrics.jsonl"
 
-    if not gate3_metrics.exists():
-        print(f"Gate 3 metrics not found at {gate3_metrics}")
+    # Load Gate 3 from both runs and merge (N=20,30,40 + N=25,50)
+    run1 = base / "results" / "run_bench_20260201_052047"
+    run2 = base / "results" / "run_bench_20260201_133438"
+
+    rows_g3: list[dict] = []
+    for rd in [run1, run2]:
+        p = rd / "gate3_gpu_matrix" / "metrics.jsonl"
+        if p.exists():
+            rows_g3.extend(_load_rows(p))
+
+    if not rows_g3:
+        print("No Gate 3 metrics found in either run.")
         return
 
-    rows_g3 = _load_rows(gate3_metrics)
-    rows_g2 = _load_rows(gate2_metrics) if gate2_metrics.exists() else []
+    # CPU rows from run2 Gate 1 (for MTS throughput comparison)
+    g1_path = run2 / "gate1_cpu_small" / "metrics.jsonl"
+    rows_cpu = _load_rows(g1_path) if g1_path.exists() else []
+
+    # GPU rows for MTS throughput: Gate 2 + Gate 3
+    rows_gpu = list(rows_g3)
+    for rd in [run1, run2]:
+        p = rd / "gate2_gpu_bringup" / "metrics.jsonl"
+        if p.exists():
+            rows_gpu.extend(_load_rows(p))
 
     out_dir = base / "results" / "presentation_plots"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Generating plots from {len(rows_g3)} Gate 3 rows...")
+    ns_present = sorted(set(int(r["N"]) for r in rows_g3))
+    print(f"Generating plots from {len(rows_g3)} Gate 3 rows (N={ns_present})...")
+
     plot_seed_quality(rows_g3, out_dir)
     print("  -> seed_quality_by_N.png")
 
@@ -403,15 +429,15 @@ def main():
     print("  -> final_energy_by_N.png")
 
     plot_initial_vs_final(rows_g3, out_dir)
-    print("  -> initial_vs_final_N20.png")
+    print("  -> initial_vs_final_N25.png")
 
     plot_cost_benefit(rows_g3, out_dir)
     print("  -> cost_vs_benefit.png")
 
     plot_runtime_breakdown(rows_g3, out_dir)
-    print("  -> runtime_breakdown_N20.png")
+    print("  -> runtime_breakdown_N25.png")
 
-    plot_mts_iters_per_sec(rows_g3, out_dir)
+    plot_mts_iters_per_sec(rows_cpu, rows_gpu, out_dir)
     print("  -> mts_iters_per_sec.png")
 
     plot_results_table(rows_g3, out_dir)
