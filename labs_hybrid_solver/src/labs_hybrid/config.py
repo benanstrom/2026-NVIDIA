@@ -76,7 +76,7 @@ class BenchmarkPlan:
     """Encodes the required gate workflow (0→3)."""
 
     gates: list[GateConfig]
-    gpu_budget_cap_s: float = 300.0  # stop Gate 3 early if exceeded
+    gpu_budget_cap_s: float = 1800.0  # stop Gate 3 early if exceeded
 
 
 def default_benchmark_plan() -> BenchmarkPlan:

@@ -28,6 +28,9 @@ def run_mts_cpu(
 
     tenure = int(tabu_params.get("tenure", 7))
     aspiration = bool(tabu_params.get("aspiration", True))
+    stagnation_window = tabu_params.get("stagnation_window", None)
+    if stagnation_window is not None:
+        stagnation_window = int(stagnation_window)
 
     tabu = np.zeros((K, N), dtype=np.int32)
 
@@ -40,6 +43,7 @@ def run_mts_cpu(
     best_global_E = int(E_cur[best_idx])
 
     trace_best = [best_global_E]
+    stagnation_count = 0
 
     it = 0
     while True:
@@ -87,9 +91,16 @@ def run_mts_cpu(
         if cur_best_E < best_global_E:
             best_global_E = cur_best_E
             best_global_seq = best_per[cur_best_idx].copy()
+            stagnation_count = 0
+        else:
+            stagnation_count += 1
 
         trace_best.append(best_global_E)
 
+        if stagnation_window is not None and stagnation_count >= stagnation_window:
+            break
+
+    early_exit = (stagnation_window is not None and stagnation_count >= stagnation_window)
     t_total = time.perf_counter() - t0
     logs = {
         "device": "cpu",
@@ -97,5 +108,6 @@ def run_mts_cpu(
         "time_total_s": t_total,
         "best_trace": trace_best,
         "best_energy": float(best_global_E),
+        "early_exit_stagnation": early_exit,
     }
     return best_global_seq, float(best_global_E), logs

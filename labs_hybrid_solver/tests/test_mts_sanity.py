@@ -101,6 +101,37 @@ def test_mts_gpu_delta_vs_naive_parity():
 # CPU ↔ GPU convergence parity
 # ---------------------------------------------------------------------------
 
+def test_mts_cpu_stagnation_early_exit():
+    """MTS with stagnation_window must exit before max_iters when converged."""
+    rng = np.random.default_rng(0)
+    N = 12
+    K = 4
+    seeds = rng.integers(0, 2, size=(K, N), dtype=np.int8) * 2 - 1
+
+    max_iters = 200
+    stag_window = 10
+
+    _, _, logs_stag = run_mts_cpu(
+        seeds.copy(),
+        budget_s=None,
+        max_iters=max_iters,
+        tabu_params={"tenure": 5, "aspiration": True, "stagnation_window": stag_window},
+        rng_seed=0,
+    )
+    _, _, logs_full = run_mts_cpu(
+        seeds.copy(),
+        budget_s=None,
+        max_iters=max_iters,
+        tabu_params={"tenure": 5, "aspiration": True},
+        rng_seed=0,
+    )
+
+    # Stagnation path should exit earlier (or at worst equal if it never stagnates).
+    assert logs_stag["iters"] <= logs_full["iters"]
+    assert logs_stag["early_exit_stagnation"] or logs_stag["iters"] == logs_full["iters"]
+    assert logs_full["early_exit_stagnation"] is False
+
+
 @pytest.mark.skipif(not gpu_available, reason="CuPy / GPU not available")
 @pytest.mark.parametrize("K,N,iters", [(8, 16, 30), (4, 12, 40)])
 def test_mts_cpu_gpu_convergence_parity(K, N, iters):

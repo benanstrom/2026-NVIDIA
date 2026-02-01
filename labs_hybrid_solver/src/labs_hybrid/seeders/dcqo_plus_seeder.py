@@ -88,6 +88,12 @@ def _compute_trotter_meta(
 
 
 def _fallback_classical(N: int, shots: int, rng_seed: int) -> np.ndarray:
+    """Pure random ±1 seeds — no proxy optimization.
+
+    **Limitation:** Unlike the QAOA and DCQO fallbacks, DCQO+ does not even apply proxy
+    sweeps when CUDA-Q is unavailable. Seeds are uniform random. This is acceptable because
+    the fallback only activates without GPU, and the MTS post-processing compensates.
+    """
     rng = get_np_rng(rng_seed)
     return sample_pm1((shots, N), rng)
 
@@ -158,7 +164,7 @@ def generate_seeds(
                 "trotter_config": {"time_grid": time_grid, "ordering": ordering, "K_perm": K_perm},
             },
             "trotter_meta": trotter_meta,
-            "notes": "CUDA-Q not found; no circuit built.",
+            "notes": "CUDA-Q not found; using uniform random seeds (no proxy optimization). Seed quality = random.",
         }
         return seeds.astype(np.int8, copy=False), info
 

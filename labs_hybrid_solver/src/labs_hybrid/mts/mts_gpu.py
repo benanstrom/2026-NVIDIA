@@ -302,6 +302,9 @@ def run_mts_gpu(
     tenure = int(tabu_params.get("tenure", 7))
     aspiration = bool(tabu_params.get("aspiration", True))
     trace_stride = int(tabu_params.get("trace_stride", 5))
+    stagnation_window = tabu_params.get("stagnation_window", None)
+    if stagnation_window is not None:
+        stagnation_window = int(stagnation_window)
 
     tabu = cp.zeros((K, N), dtype=cp.int32)
 
@@ -324,6 +327,7 @@ def run_mts_gpu(
     best_global_E = float(cp.asnumpy(E_best_per[best_idx]))
 
     trace_best = [best_global_E]
+    stagnation_count = 0
 
     # Pre-allocate delta energies buffer
     delta_energies = cp.empty((K, N), dtype=cp.int64)
@@ -380,21 +384,30 @@ def run_mts_gpu(
             best_per[improved] = pop[improved]
             E_best_per[improved] = E_cur[improved]
 
+        # Check global best for stagnation tracking (lightweight: one cp.min).
+        cur_global_min = float(cp.asnumpy(cp.min(E_best_per)))
+        if cur_global_min < best_global_E:
+            best_global_E = cur_global_min
+            idx_best = int(cp.asnumpy(cp.argmin(E_best_per)))
+            best_global_seq = cp.asnumpy(best_per[idx_best]).astype(np.int8, copy=False)
+            stagnation_count = 0
+        else:
+            stagnation_count += 1
+
         if it % trace_stride == 0:
-            idx = cp.argmin(E_best_per)
-            E_best = E_best_per[idx]
-            E_host = float(cp.asnumpy(E_best))
-            if E_host < best_global_E:
-                best_global_E = E_host
-                best_global_seq = cp.asnumpy(best_per[idx]).astype(np.int8, copy=False)
             trace_best.append(best_global_E)
 
+        if stagnation_window is not None and stagnation_count >= stagnation_window:
+            break
+
+    # Final check (in case last improvement was between trace strides).
     idx = cp.argmin(E_best_per)
     E_best = float(cp.asnumpy(E_best_per[idx]))
     if E_best < best_global_E:
         best_global_E = E_best
         best_global_seq = cp.asnumpy(best_per[idx]).astype(np.int8, copy=False)
 
+    early_exit = (stagnation_window is not None and stagnation_count >= stagnation_window)
     t_total = time.perf_counter() - t0
     logs = {
         "device": "gpu",
@@ -403,5 +416,6 @@ def run_mts_gpu(
         "trace_stride": trace_stride,
         "best_trace": trace_best,
         "best_energy": best_global_E,
+        "early_exit_stagnation": early_exit,
     }
     return best_global_seq, float(best_global_E), logs
