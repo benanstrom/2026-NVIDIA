@@ -1,0 +1,74 @@
+{
+  "env": {
+    "platform": "Linux-6.8.0-90-generic-x86_64-with-glibc2.35",
+    "python": "3.12.12"
+  },
+  "gate": {
+    "N_list": [
+      20,
+      30,
+      40
+    ],
+    "budget_s": 3.0,
+    "device": "gpu",
+    "max_iters": null,
+    "name": "gate3_gpu_matrix",
+    "seeders": [
+      {
+        "K_out": 256,
+        "K_select": 32,
+        "name": "random",
+        "params": {},
+        "shots": 256
+      },
+      {
+        "K_out": 256,
+        "K_select": 32,
+        "name": "qaoa",
+        "params": {
+          "p": 1
+        },
+        "shots": 256
+      },
+      {
+        "K_out": 256,
+        "K_select": 32,
+        "name": "dcqo",
+        "params": {
+          "steps": 24
+        },
+        "shots": 256
+      },
+      {
+        "K_out": 256,
+        "K_select": 32,
+        "name": "dcqo_plus",
+        "params": {
+          "steps": 24,
+          "trotter_config": {
+            "K_perm": 1,
+            "ordering": "fixed",
+            "time_grid": "right_endpoint"
+          }
+        },
+        "shots": 256
+      },
+      {
+        "K_out": 256,
+        "K_select": 32,
+        "name": "pce",
+        "params": {
+          "layers": 15
+        },
+        "shots": 256
+      }
+    ]
+  },
+  "rng_seed": 0,
+  "run_tag": "bench",
+  "skipped_oom": [
+    "Skipped: qaoa N=40 needs ~16384.0 GB state vector (\u00d72.5 safety = 40960.0 GB), but only 70.6 GB free",
+    "Skipped: dcqo N=40 needs ~16384.0 GB state vector (\u00d72.5 safety = 40960.0 GB), but only 70.6 GB free",
+    "Skipped: dcqo_plus N=40 needs ~16384.0 GB state vector (\u00d72.5 safety = 40960.0 GB), but only 70.6 GB free"
+  ]
+}

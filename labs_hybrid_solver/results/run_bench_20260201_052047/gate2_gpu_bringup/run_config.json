@@ -1,0 +1,68 @@
+{
+  "env": {
+    "platform": "Linux-6.8.0-90-generic-x86_64-with-glibc2.35",
+    "python": "3.12.12"
+  },
+  "gate": {
+    "N_list": [
+      16
+    ],
+    "budget_s": 1.0,
+    "device": "gpu",
+    "max_iters": null,
+    "name": "gate2_gpu_bringup",
+    "seeders": [
+      {
+        "K_out": 256,
+        "K_select": 32,
+        "name": "random",
+        "params": {},
+        "shots": 256
+      },
+      {
+        "K_out": 256,
+        "K_select": 32,
+        "name": "qaoa",
+        "params": {
+          "p": 1
+        },
+        "shots": 256
+      },
+      {
+        "K_out": 256,
+        "K_select": 32,
+        "name": "dcqo",
+        "params": {
+          "steps": 24
+        },
+        "shots": 256
+      },
+      {
+        "K_out": 256,
+        "K_select": 32,
+        "name": "dcqo_plus",
+        "params": {
+          "steps": 24,
+          "trotter_config": {
+            "K_perm": 1,
+            "ordering": "fixed",
+            "time_grid": "right_endpoint"
+          }
+        },
+        "shots": 256
+      },
+      {
+        "K_out": 256,
+        "K_select": 32,
+        "name": "pce",
+        "params": {
+          "layers": 15
+        },
+        "shots": 256
+      }
+    ]
+  },
+  "rng_seed": 0,
+  "run_tag": "bench",
+  "skipped_oom": null
+}
