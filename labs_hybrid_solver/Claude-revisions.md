@@ -56,10 +56,10 @@
 
 ## Medium Priority
 
-### 4. GPU MTS Convergence Parity Test
+### 4. GPU MTS Convergence Parity Test — DONE
 - **Issue:** Only energy function CPU/GPU parity is tested. No test verifies that CPU and GPU MTS produce the same (sequence, energy) under a fixed RNG seed.
-- **Action:** Add `test_mts_cpu_gpu_determinism()` in test suite.
-- **File:** `tests/test_mts_sanity.py` or new `tests/test_mts_cpu_gpu_parity.py`
+- **Action:** Added `test_mts_cpu_gpu_convergence_parity` in `tests/test_mts_sanity.py`, parametrized over (K=8,N=16,iters=30) and (K=4,N=12,iters=40). Both paths are deterministic (no RNG in tabu loop); given identical seeds and fixed max_iters, the move sequence is identical. Asserts both best energy and best sequence match bit-for-bit.
+- **File:** `tests/test_mts_sanity.py`
 
 ### 5. CUDA-Q Seeding Verification
 - **Issue:** `test_seeders_validity.py` skips determinism check when CUDA-Q seeding is unverified (lines 57–58).
@@ -99,7 +99,7 @@
 | 1 | GPU energy kernel optimization | High | Done (150–250x speedup) |
 | 2 | GPU MTS delta-energy optimization | High | Done (13–48x speedup) |
 | 3 | PCE seeder completion | High | Done (paper-accurate, numpy+scipy) |
-| 4 | GPU MTS convergence parity test | Medium | Pending |
+| 4 | GPU MTS convergence parity test | Medium | Done |
 | 5 | CUDA-Q seeding verification | Medium | Pending |
 | 6 | Gate 3 OOM guard | Medium | Pending |
 | 7 | Post-selection integration test | Low | Pending |

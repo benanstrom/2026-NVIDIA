@@ -95,3 +95,47 @@ def test_mts_gpu_delta_vs_naive_parity():
     assert int(E_delta) == int(E_naive), (
         f"Delta energy {E_delta} != naive energy {E_naive}"
     )
+
+
+# ---------------------------------------------------------------------------
+# CPU ↔ GPU convergence parity
+# ---------------------------------------------------------------------------
+
+@pytest.mark.skipif(not gpu_available, reason="CuPy / GPU not available")
+@pytest.mark.parametrize("K,N,iters", [(8, 16, 30), (4, 12, 40)])
+def test_mts_cpu_gpu_convergence_parity(K, N, iters):
+    """CPU and GPU MTS must converge to the same best energy and sequence.
+
+    Both paths are fully deterministic (no RNG in the tabu loop). Given
+    identical seeds and a fixed max_iters (no time budget), the neighborhood
+    evaluation, tabu masking, and argmin logic are equivalent, so the
+    move sequence must be identical on every iteration.
+    """
+    from labs_hybrid.mts.mts_gpu import run_mts_gpu
+
+    rng = np.random.default_rng(42)
+    seeds = rng.integers(0, 2, size=(K, N), dtype=np.int8) * 2 - 1
+
+    params = {"tenure": 5, "aspiration": True, "trace_stride": 1}
+
+    seq_cpu, E_cpu, logs_cpu = run_mts_cpu(
+        seeds.copy(),
+        budget_s=None,
+        max_iters=iters,
+        tabu_params=params,
+        rng_seed=0,
+    )
+    seq_gpu, E_gpu, logs_gpu = run_mts_gpu(
+        seeds.copy(),
+        budget_s=None,
+        max_iters=iters,
+        tabu_params=params,
+        rng_seed=0,
+    )
+
+    assert int(E_cpu) == int(E_gpu), (
+        f"CPU best energy {E_cpu} != GPU best energy {E_gpu}"
+    )
+    assert np.array_equal(seq_cpu, seq_gpu), (
+        "CPU and GPU best sequences differ despite identical energy"
+    )
