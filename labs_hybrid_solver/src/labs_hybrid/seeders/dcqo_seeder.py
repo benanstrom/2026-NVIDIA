@@ -14,7 +14,14 @@ from .qaoa_seeder import _counts_to_bitstrings, _labs_proxy_pairs, _bitstrings_t
 def _fallback_classical_dcqo_like(N: int, shots: int, rng_seed: int, params: dict) -> np.ndarray:
     """Runnable fallback if CUDA-Q isn't available.
 
-    A very lightweight 'digitized evolution' surrogate: repeated deterministic proxy sweeps.
+    A very lightweight 'digitized evolution' surrogate: repeated deterministic proxy sweeps
+    (up to 3 passes of greedy single-bit flips under a 2-local proxy cost).
+
+    **Limitation:** The 2-local proxy (Σ Z_i Z_{i+k} for k ≤ max_lag) is a crude
+    approximation of the true 4-local LABS objective. With only 3 sweeps, seed quality
+    is marginal — comparable to lightly improved random sampling. This is acceptable
+    because the fallback only activates when CUDA-Q is not installed (no GPU available),
+    typically in test/CI environments where seed quality is not critical.
     """
 
     rng = get_np_rng(rng_seed)
@@ -86,7 +93,7 @@ def generate_seeds(
             "raw_energy_min": int(E.min()),
             "raw_energy_mean": float(E.mean()),
             "params": {"steps": steps, "max_lag": max_lag, "total_time": total_time, "bit_order": bit_order},
-            "notes": "CUDA-Q not found; using fallback sampler.",
+            "notes": "CUDA-Q not found; using classical fallback (3 greedy sweeps under 2-local proxy). Seed quality ~random.",
         }
         return seeds.astype(np.int8, copy=False), info
 

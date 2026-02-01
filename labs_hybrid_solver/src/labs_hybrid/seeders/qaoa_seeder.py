@@ -77,6 +77,13 @@ def _fallback_classical_qaoa_like(N: int, shots: int, rng_seed: int, params: dic
     """Runnable fallback if CUDA-Q isn't available.
 
     Produces valid seeds and applies a tiny deterministic local 'smoothing' under a 2-local proxy.
+
+    **Limitation:** This fallback generates random ±1 seeds then runs a single greedy sweep
+    under a 2-local proxy cost (Σ Z_i Z_{i+k} for k ≤ max_lag). The true LABS objective
+    contains 4-local terms after squaring autocorrelations, so the proxy is a poor approximation.
+    Expect seed quality comparable to (or only marginally better than) uniform random sampling.
+    This is acceptable because the fallback only activates when CUDA-Q is not installed, which
+    implies no GPU is available and the solver is running in a limited test/CI environment.
     """
 
     rng = get_np_rng(rng_seed)
@@ -144,7 +151,7 @@ def generate_seeds(
             "raw_energy_min": int(E.min()),
             "raw_energy_mean": float(E.mean()),
             "params": {"p": p, "max_lag": max_lag, "bit_order": bit_order},
-            "notes": "CUDA-Q not found; using fallback sampler.",
+            "notes": "CUDA-Q not found; using classical fallback (1 greedy sweep under 2-local proxy). Seed quality ~random.",
         }
         return seeds.astype(np.int8, copy=False), info
 

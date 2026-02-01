@@ -80,20 +80,36 @@
 
 ## Low Priority
 
-### 7. Post-Selection Integration Test
+### 7. Post-Selection Integration Test — DONE
 - **Issue:** `selectors.py` has no dedicated test verifying that post-selection extracts the low-energy tail and improves population quality.
-- **Action:** Add `test_postselection_extracts_low_energy_tail()`.
-- **File:** New `tests/test_selectors.py`
+- **Action:** Created `tests/test_selectors.py` with 9 tests:
+  - `test_postselection_extracts_low_energy_tail` — verifies selected seeds are the actual K_select lowest-energy subset by comparing sorted energies.
+  - `test_postselection_improves_population_quality` — mean energy after selection ≤ mean energy before.
+  - `test_postselection_preserves_sequences` — every selected row exists in the original input (no mutation).
+  - `test_postselection_k_select_equals_k_in` — edge case: K_select == K_in returns all seeds.
+  - `test_postselection_rejects_invalid_k` — K_select ≤ 0 raises ValueError.
+  - `test_mean_pairwise_hamming_identical` / `_single` / `_opposite` — coverage for the diversity metric.
+- **File:** `tests/test_selectors.py`
 
-### 8. DCQO/QAOA Classical Fallbacks
+### 8. DCQO/QAOA Classical Fallbacks — DONE
 - **Issue:** Fallback implementations when CUDA-Q is unavailable are minimal (DCQO: 3 sweeps; QAOA: simple local search). Seeds will be poor quality.
-- **Action:** Acceptable for now — these only activate without GPU. Document the limitation.
-- **File:** `seeders/dcqo_seeder.py`, `seeders/qaoa_seeder.py`
+- **Action:** Documented limitations across all three fallback seeders:
+  - `qaoa_seeder.py` — docstring explains 1-sweep greedy under 2-local proxy ≈ random quality; info dict notes updated.
+  - `dcqo_seeder.py` — docstring explains 3-sweep greedy under 2-local proxy ≈ random quality; info dict notes updated.
+  - `dcqo_plus_seeder.py` — docstring explains pure random ±1 (no proxy optimization at all); info dict notes updated.
+  - All notes clarify this is acceptable because fallbacks only activate without GPU (test/CI environments).
+- **Files:** `seeders/qaoa_seeder.py`, `seeders/dcqo_seeder.py`, `seeders/dcqo_plus_seeder.py`
 
-### 9. MTS Stagnation Detection
+### 9. MTS Stagnation Detection — DONE
 - **Issue:** MTS runs for full budget even when converged.
-- **Action:** Add optional early-exit when no improvement seen for N consecutive iterations.
-- **File:** `mts/mts_cpu.py`, `mts/mts_gpu.py`
+- **Action:** Added optional `stagnation_window` parameter to both CPU and GPU MTS paths via `tabu_params` dict:
+  - When `stagnation_window` is set and the global best energy has not improved for that many consecutive iterations, the loop exits early.
+  - Default: `None` (disabled) — no behavioral change to existing code.
+  - CPU path (`mts_cpu.py`): checks `best_global_E` every iteration.
+  - GPU delta path (`mts_gpu.py`): checks `cp.min(E_best_per)` every iteration (lightweight: one scalar reduction).
+  - Both paths log `early_exit_stagnation: true/false` in the returned logs dict.
+  - Test added: `test_mts_cpu_stagnation_early_exit` in `test_mts_sanity.py` — verifies early exit runs fewer iterations than full run, and log flags are correct.
+- **Files:** `mts/mts_cpu.py`, `mts/mts_gpu.py`, `tests/test_mts_sanity.py`
 
 ---
 
@@ -107,6 +123,6 @@
 | 4 | GPU MTS convergence parity test | Medium | Done |
 | 5 | CUDA-Q seeding verification | Medium | Done |
 | 6 | Gate 3 OOM guard | Medium | Done |
-| 7 | Post-selection integration test | Low | Pending |
-| 8 | Document fallback limitations | Low | Pending |
-| 9 | MTS stagnation detection | Low | Pending |
+| 7 | Post-selection integration test | Low | Done |
+| 8 | Document fallback limitations | Low | Done |
+| 9 | MTS stagnation detection | Low | Done |
