@@ -1,4 +1,5 @@
 numpy
+scipy
 cupy-cuda12x
 matplotlib
 pytest
