@@ -1,2 +1,0 @@
-gate,pytest_returncode,pytest_time_s,pytest_log,pytest_passed
-gate0_tests,0,6.784919104999972,results/run_bench_20260201_132119/artifacts/pytest_gate0.txt,True
