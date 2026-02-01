@@ -352,7 +352,7 @@ def _optimize_single(
         cost_fn,
         theta0,
         method=optimizer,
-        options={"maxiter": maxiter, "disp": False},
+        options={"maxiter": maxiter},
     )
 
     theta_opt = result.x
